@@ -3,12 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import BookcaseScanner from '../components/BookcaseScanner';
 import scanBarcode from '../utils/scanBarcode';
 import { useBookContext } from '../context/BookContext';
-import { QrCode, CheckCircle2, AlertCircle, Library, FileSpreadsheet, Plus, Trash2 } from 'lucide-react';
+import { QrCode, CheckCircle2, AlertCircle, Library, FileSpreadsheet, Plus, Trash2, Camera } from 'lucide-react';
 
 export default function ScanCatalog() {
   const navigate = useNavigate();
   const { books, addBook } = useBookContext();
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isScanning, setIsScanning] = useState(false);
+  const [manualIsbn, setManualIsbn] = useState('');
   const [scanStatus, setScanStatus] = useState<{ type: 'success' | 'error' | 'info'; message: string } | null>(null);
 
   // Staged scanned books awaiting confirmation before or automatically synced into library
@@ -173,8 +175,37 @@ export default function ScanCatalog() {
     setStagedBooks((prev) => prev.filter((b) => b.id !== id));
   };
 
+  const handleManualIsbnLookup = async () => {
+    if (!manualIsbn) return;
+    setScanStatus({ type: 'info', message: `Looking up ISBN ${manualIsbn}...` });
+    try {
+      const response = await fetch('/api/lookup-isbn', {
+        method: 'POST',
+        body: JSON.stringify({ isbn: manualIsbn }),
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      if (!response.ok) throw new Error('Could not retrieve book details.');
+
+      const book = await response.json();
+      const newBook = {
+        ...book,
+        pubDate: book.pubDate || '2024',
+        coverImage: book.coverImage || 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=300',
+        tags: book.tags || ['Manual Entry']
+      };
+
+      addBook(newBook);
+      setStagedBooks((prev) => [{ ...newBook, id: `manual-${Date.now()}`, confidence: '100%' }, ...prev]);
+      setManualIsbn('');
+      setScanStatus({ type: 'success', message: `Added "${newBook.title}"!` });
+    } catch (err: any) {
+      setScanStatus({ type: 'error', message: err.message });
+    }
+  };
+
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
+    <div className="max-w-6xl mx-auto space-y-6 relative min-h-screen">
       {/* Header section */}
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#6c7a89]/15 pb-4">
         <div>
@@ -188,18 +219,46 @@ export default function ScanCatalog() {
             Capture or drop a photo of a single cover or entire bookcase to auto-extract titles, authors, and ISBNs.
           </p>
         </div>
-
-        <div className="flex flex-wrap items-center gap-3">
-          <button
-            type="button"
-            onClick={handleBarcodeScan}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#505d6c] hover:bg-[#3d4957] text-white text-xs font-semibold shadow-sm transition cursor-pointer"
-          >
-            <QrCode className="w-4 h-4" />
-            Scan Single Barcode
-          </button>
-        </div>
       </div>
+
+      {/* Manual ISBN Input */}
+      <div className="flex gap-2 mb-6">
+        <input
+          type="text"
+          placeholder="Enter ISBN manually..."
+          value={manualIsbn}
+          onChange={(e) => setManualIsbn(e.target.value)}
+          className="flex-1 p-3 border rounded-lg"
+        />
+        <button onClick={handleManualIsbnLookup} className="px-4 py-2 bg-[#505d6c] text-white rounded-lg">Add</button>
+      </div>
+
+      {/* Floating Action Buttons */}
+      <div className="fixed bottom-8 right-8 flex flex-col gap-4 z-50">
+        <button
+          type="button"
+          onClick={() => setIsScanning(true)}
+          className="p-4 bg-[#505d6c] text-white rounded-full shadow-xl hover:bg-[#3d4957] transition cursor-pointer"
+          title="Scan Bookcase"
+        >
+          <Camera className="w-8 h-8" />
+        </button>
+        <button
+          type="button"
+          onClick={handleBarcodeScan}
+          className="p-4 bg-[#476555] text-white rounded-full shadow-xl hover:bg-[#385244] transition cursor-pointer"
+          title="Scan Barcode"
+        >
+          <QrCode className="w-8 h-8" />
+        </button>
+      </div>
+
+      {isScanning && (
+        <div className="fixed inset-0 z-40 bg-white/95 p-4 flex flex-col">
+          <BookcaseScanner onCapture={handleCapture} isProcessing={isProcessing} />
+          <button onClick={() => setIsScanning(false)} className="mt-4 w-full py-3 bg-gray-200 rounded-lg">Close Scanner</button>
+        </div>
+      )}
 
       {/* Status banner */}
       {scanStatus && (
