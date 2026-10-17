@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import BookDetailsModal from '../components/BookDetailsModal';
 import { useBookContext } from '../context/BookContext';
+import LibraryDashboard from '../components/LibraryDashboard';
 
 export default function MyLibrary() {
   const { books } = useBookContext();
@@ -20,6 +21,7 @@ export default function MyLibrary() {
   return (
     <div className="p-4">
       <h1 className="text-3xl font-literata font-medium mb-6">My Library</h1>
+      <LibraryDashboard />
       <input
         type="text"
         placeholder="Search by title, author, or ISBN..."

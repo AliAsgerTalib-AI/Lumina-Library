@@ -25,6 +25,7 @@ export const BookProvider = ({ children }: { children: ReactNode }) => {
   ]);
 
   const addBook = (book: Omit<Book, 'id'>) => {
+    if (books.some(b => b.isbn === book.isbn)) return;
     setBooks(prev => [...prev, { ...book, id: Date.now().toString() }]);
   };
 

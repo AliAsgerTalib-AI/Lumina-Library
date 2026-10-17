@@ -1,45 +1,32 @@
 import { useState } from 'react';
-import BarcodeScanner from '../components/BarcodeScanner';
+import BookcaseScanner from '../components/BookcaseScanner';
 import { useBookContext } from '../context/BookContext';
 
 export default function ScanCatalog() {
   const { addBook } = useBookContext();
-  const [isbn, setIsbn] = useState('');
-  const [formData, setFormData] = useState({ title: '', author: '' });
   const [isScanning, setIsScanning] = useState(false);
 
-  const handleScanSuccess = (decodedText: string) => {
-    setIsbn(decodedText);
+  const handleCapture = async (image: string) => {
     setIsScanning(false);
-    const newBook = { 
-      title: 'Scanned Book', 
-      author: 'Unknown', 
-      isbn: decodedText, 
-      pubDate: '2026', 
-      coverImage: 'https://placehold.co/200x300', 
-      tags: ['New Scan'] 
-    };
-    setFormData({ title: newBook.title, author: newBook.author });
-    addBook(newBook);
+    const response = await fetch('/api/analyze-bookcase', {
+      method: 'POST',
+      body: JSON.stringify({ image }),
+      headers: { 'Content-Type': 'application/json' }
+    });
+    const scannedBooks = await response.json();
+    scannedBooks.forEach((book: any) => {
+      addBook({ ...book, pubDate: book.pubDate || 'Unknown', coverImage: 'https://placehold.co/200x300', tags: book.tags || ['Auto-scanned'] });
+    });
   };
 
   return (
     <div className="p-4 max-w-2xl mx-auto">
-      <h1 className="text-3xl font-literata font-medium mb-6">Scan and Catalog</h1>
-      
+      <h1 className="text-3xl font-literata font-medium mb-6">Scan Bookcase</h1>
       {!isScanning ? (
-        <button onClick={() => setIsScanning(true)} className="px-4 py-2 bg-primary text-white rounded-md mb-6">
-          Start Barcode Scanner
-        </button>
+        <button onClick={() => setIsScanning(true)} className="px-4 py-2 bg-primary text-white rounded-md">Start Bookcase Scan</button>
       ) : (
-        <BarcodeScanner onScanSuccess={handleScanSuccess} />
+        <BookcaseScanner onCapture={handleCapture} />
       )}
-
-      <div className="space-y-4 mt-6">
-        <input value={isbn} onChange={(e) => setIsbn(e.target.value)} placeholder="ISBN" className="w-full p-3 border rounded-md" />
-        <input value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} placeholder="Title" className="w-full p-3 border rounded-md" />
-        <input value={formData.author} onChange={(e) => setFormData({...formData, author: e.target.value})} placeholder="Author" className="w-full p-3 border rounded-md" />
-      </div>
     </div>
   );
 }
