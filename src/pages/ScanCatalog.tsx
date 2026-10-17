@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import BarcodeScanner from '../components/BarcodeScanner';
+import { useBookContext } from '../context/BookContext';
 
 export default function ScanCatalog() {
+  const { addBook } = useBookContext();
   const [isbn, setIsbn] = useState('');
   const [formData, setFormData] = useState({ title: '', author: '' });
   const [isScanning, setIsScanning] = useState(false);
@@ -9,8 +11,16 @@ export default function ScanCatalog() {
   const handleScanSuccess = (decodedText: string) => {
     setIsbn(decodedText);
     setIsScanning(false);
-    // Mock metadata lookup
-    setFormData({ title: 'Scanned Book Title', author: 'Author Name' });
+    const newBook = { 
+      title: 'Scanned Book', 
+      author: 'Unknown', 
+      isbn: decodedText, 
+      pubDate: '2026', 
+      coverImage: 'https://placehold.co/200x300', 
+      tags: ['New Scan'] 
+    };
+    setFormData({ title: newBook.title, author: newBook.author });
+    addBook(newBook);
   };
 
   return (

@@ -1,19 +1,16 @@
 import { useState } from 'react';
 import BookDetailsModal from '../components/BookDetailsModal';
-
-const BOOKS = [
-  { id: '1', title: 'Dune', author: 'Frank Herbert', isbn: '9780441013593', pubDate: '1965', coverImage: 'https://placehold.co/200x300', tags: ['Sci-Fi', 'Classic'] },
-  { id: '2', title: 'Atomic Habits', author: 'James Clear', isbn: '9780735211292', pubDate: '2018', coverImage: 'https://placehold.co/200x300', tags: ['Self-Help'] },
-];
+import { useBookContext } from '../context/BookContext';
 
 export default function MyLibrary() {
+  const { books } = useBookContext();
   const [selectedBook, setSelectedBook] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
 
-  const allTags = Array.from(new Set(BOOKS.flatMap(b => b.tags)));
+  const allTags = Array.from(new Set(books.flatMap(b => b.tags)));
 
-  const filteredBooks = BOOKS.filter(book => 
+  const filteredBooks = books.filter(book => 
     (book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     book.author.toLowerCase().includes(searchQuery.toLowerCase()) ||
     book.isbn.includes(searchQuery)) &&
