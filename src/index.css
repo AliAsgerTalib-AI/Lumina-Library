@@ -6,5 +6,8 @@
     --on-surface: #1a1c1a;
     --primary: #505d6c;
   }
+  body.qrscanner-active {
+    background: transparent !important;
+  }
 }
 
